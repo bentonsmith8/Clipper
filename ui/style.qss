@@ -1,0 +1,462 @@
+/* VideoForge — Dark Industrial Style Sheet */
+
+/* ─── Global ─────────────────────────────────────────────────────── */
+
+* {
+    font-family: "IBM Plex Mono", "Courier New", monospace;
+    font-size: 12px;
+    color: #c8c8d8;
+    outline: none;
+}
+
+QMainWindow, QWidget {
+    background-color: #0f0f1a;
+}
+
+QSplitter::handle {
+    background-color: #2a2a3e;
+}
+
+/* ─── Menu Bar ───────────────────────────────────────────────────── */
+
+QMenuBar {
+    background-color: #0d0d18;
+    border-bottom: 1px solid #2a2a3e;
+    padding: 2px 4px;
+}
+
+QMenuBar::item {
+    padding: 4px 12px;
+    border-radius: 3px;
+}
+
+QMenuBar::item:selected {
+    background-color: #2a2a4a;
+    color: #00d4aa;
+}
+
+QMenu {
+    background-color: #14142a;
+    border: 1px solid #3a3a5a;
+    padding: 4px 0;
+}
+
+QMenu::item {
+    padding: 6px 24px 6px 16px;
+}
+
+QMenu::item:selected {
+    background-color: #2a2a4a;
+    color: #00d4aa;
+}
+
+QMenu::separator {
+    height: 1px;
+    background: #2a2a4a;
+    margin: 4px 0;
+}
+
+/* ─── Video Area ─────────────────────────────────────────────────── */
+
+#videoWidget {
+    background-color: #000000;
+}
+
+#dropLabel {
+    background-color: transparent;
+    color: #4a4a6a;
+    font-size: 16px;
+    font-family: "IBM Plex Mono", monospace;
+}
+
+/* ─── Controls Bar ───────────────────────────────────────────────── */
+
+#controlsBar {
+    background-color: #12121f;
+    border-top: 1px solid #2a2a3e;
+}
+
+#btnPlay {
+    background-color: #00d4aa;
+    color: #0f0f1a;
+    border: none;
+    border-radius: 22px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#btnPlay:hover {
+    background-color: #00ffcc;
+}
+
+#btnPlay:pressed {
+    background-color: #00a888;
+}
+
+#btnTransport {
+    background-color: #2a2a3e;
+    color: #c8c8d8;
+    border: 1px solid #3a3a5a;
+    border-radius: 4px;
+    font-size: 11px;
+}
+
+#btnTransport:hover {
+    background-color: #3a3a5a;
+    color: #ffffff;
+}
+
+#btnTransport:pressed {
+    background-color: #1a1a2e;
+}
+
+#timecodeLabel {
+    font-family: "IBM Plex Mono", "Courier New", monospace;
+    font-size: 13px;
+    color: #00d4aa;
+    letter-spacing: 1px;
+}
+
+#volumeLabel {
+    font-size: 14px;
+    color: #7a7a9a;
+}
+
+/* ─── Timeline Container ─────────────────────────────────────────── */
+
+#timelineContainer {
+    background-color: #12121f;
+    border-top: 1px solid #2a2a3e;
+}
+
+#btnIO {
+    background-color: #1e1e34;
+    color: #c8c8d8;
+    border: 1px solid #3d5a80;
+    border-radius: 4px;
+    padding: 5px 14px;
+    font-size: 11px;
+}
+
+#btnIO:hover {
+    background-color: #3d5a80;
+    color: #ffffff;
+}
+
+#btnIO:pressed {
+    background-color: #2d4a70;
+}
+
+#btnIOSecondary {
+    background-color: transparent;
+    color: #7a7a9a;
+    border: 1px solid #3a3a5a;
+    border-radius: 4px;
+    padding: 5px 14px;
+    font-size: 11px;
+}
+
+#btnIOSecondary:hover {
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+}
+
+/* ─── Left Panel ─────────────────────────────────────────────────── */
+
+#leftPanel {
+    background-color: #0f0f1a;
+}
+
+/* ─── Export Panel ───────────────────────────────────────────────── */
+
+#exportPanel {
+    background-color: #0d0d18;
+    border-left: 1px solid #2a2a3e;
+}
+
+#panelTitle {
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    color: #4a4a6a;
+    padding: 4px 0 8px 0;
+    border-bottom: 1px solid #2a2a3e;
+}
+
+QGroupBox {
+    border: 1px solid #2a2a3e;
+    border-radius: 4px;
+    margin-top: 8px;
+    padding-top: 6px;
+    font-size: 10px;
+    color: #5a5a7a;
+    letter-spacing: 1px;
+}
+
+QGroupBox#panelGroup {
+    background-color: #11111e;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 8px;
+    padding: 0 4px;
+    color: #5a5a7a;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+#tcLabel {
+    font-size: 10px;
+    color: #5a5a7a;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+#tcValue {
+    font-family: "IBM Plex Mono", "Courier New", monospace;
+    font-size: 12px;
+    color: #00d4aa;
+}
+
+#presetCombo {
+    background-color: #1a1a2e;
+    border: 1px solid #3a3a5a;
+    border-radius: 4px;
+    padding: 6px 8px;
+    color: #c8c8d8;
+}
+
+#presetCombo::drop-down {
+    border: none;
+    width: 20px;
+}
+
+#presetCombo QAbstractItemView {
+    background-color: #14142a;
+    border: 1px solid #3a3a5a;
+    selection-background-color: #2a2a4a;
+    color: #c8c8d8;
+}
+
+#presetInfo {
+    font-size: 10px;
+    color: #5a5a7a;
+    padding: 0 4px;
+}
+
+#pathEdit {
+    background-color: #1a1a2e;
+    border: 1px solid #3a3a5a;
+    border-radius: 4px;
+    padding: 5px 8px;
+    color: #c8c8d8;
+}
+
+#pathEdit:focus {
+    border-color: #00d4aa;
+}
+
+#btnBrowse {
+    background-color: #2a2a3e;
+    border: 1px solid #3a3a5a;
+    border-radius: 4px;
+    color: #c8c8d8;
+}
+
+#btnBrowse:hover {
+    background-color: #3a3a5a;
+}
+
+#btnExport {
+    background-color: #00d4aa;
+    color: #0f0f1a;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+#btnExport:hover {
+    background-color: #00ffcc;
+}
+
+#btnExport:pressed {
+    background-color: #00a888;
+}
+
+#btnExport:disabled {
+    background-color: #2a2a3e;
+    color: #4a4a6a;
+}
+
+#btnCancel {
+    background-color: transparent;
+    color: #ff6b6b;
+    border: 1px solid #ff6b6b;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+#btnCancel:hover {
+    background-color: #ff6b6b;
+    color: #0f0f1a;
+}
+
+QProgressBar#exportProgress {
+    background-color: #1a1a2e;
+    border: 1px solid #3a3a5a;
+    border-radius: 4px;
+    height: 18px;
+    text-align: center;
+    color: #c8c8d8;
+    font-size: 11px;
+}
+
+QProgressBar#exportProgress::chunk {
+    background-color: qlineargradient(
+        x1:0, y1:0, x2:1, y2:0,
+        stop:0 #00a888, stop:1 #00d4aa
+    );
+    border-radius: 3px;
+}
+
+#statusLabel {
+    font-size: 11px;
+    padding: 2px 0;
+}
+
+#logView {
+    background-color: #090914;
+    border: 1px solid #2a2a3e;
+    border-radius: 3px;
+    color: #6a8a6a;
+    font-family: "IBM Plex Mono", "Courier New", monospace;
+    font-size: 9px;
+}
+
+/* ─── Audio Mix Bar ──────────────────────────────────────────────── */
+
+#audioMixBar {
+    background-color: #0e0e1c;
+    border-top: 1px solid #2a2a3e;
+}
+
+#audioStreamRow {
+    background-color: transparent;
+}
+
+#audioStreamLabel {
+    font-size: 11px;
+    color: #8a8aaa;
+    letter-spacing: 0.5px;
+}
+
+#btnAudioMonitor {
+    background-color: #1a1a2e;
+    color: #7a7a9a;
+    border: 1px solid #3a3a5a;
+    border-radius: 3px;
+    font-size: 10px;
+    padding: 2px 4px;
+}
+
+#btnAudioMonitor:checked {
+    background-color: #003d2e;
+    color: #00d4aa;
+    border-color: #00d4aa;
+}
+
+#btnAudioMonitor:hover {
+    border-color: #00d4aa;
+    color: #c8c8d8;
+}
+
+#btnAudioMute {
+    background-color: #1a1a2e;
+    border: 1px solid #3a3a5a;
+    border-radius: 3px;
+    font-size: 13px;
+    padding: 1px;
+}
+
+#btnAudioMute:checked {
+    background-color: #3a1a1a;
+    border-color: #ff6b6b;
+}
+
+#btnAudioMute:hover {
+    background-color: #2a2a3e;
+}
+
+QSlider#audioVolSlider::groove:horizontal {
+    height: 4px;
+    background: #2a2a3e;
+    border-radius: 2px;
+}
+
+QSlider#audioVolSlider::handle:horizontal {
+    background: #00d4aa;
+    border: none;
+    width: 10px;
+    height: 10px;
+    margin: -3px 0;
+    border-radius: 5px;
+}
+
+QSlider#audioVolSlider::sub-page:horizontal {
+    background: #00a888;
+    border-radius: 2px;
+}
+
+#audioVolLabel {
+    font-size: 10px;
+    color: #5a5a7a;
+    font-family: "IBM Plex Mono", "Courier New", monospace;
+}
+
+/* ─── Status Bar ─────────────────────────────────────────────────── */
+
+QStatusBar {
+    background-color: #0a0a15;
+    border-top: 1px solid #2a2a3e;
+    font-size: 11px;
+    color: #5a5a7a;
+}
+
+QStatusBar QLabel {
+    font-size: 11px;
+    color: #5a5a7a;
+}
+
+/* ─── Scroll Bars ────────────────────────────────────────────────── */
+
+QScrollBar:vertical {
+    background: #0f0f1a;
+    width: 8px;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:vertical {
+    background: #3a3a5a;
+    border-radius: 4px;
+    min-height: 20px;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+/* ─── Tooltip ────────────────────────────────────────────────────── */
+
+QToolTip {
+    background-color: #14142a;
+    color: #00d4aa;
+    border: 1px solid #3d5a80;
+    padding: 4px 8px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    border-radius: 3px;
+}
