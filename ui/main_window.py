@@ -17,12 +17,13 @@ from ui.player_widget import VideoPlayerWidget
 from ui.timeline_widget import TimelineWidget
 from ui.export_panel import ExportPanel
 from core.ffmpeg_worker import probe_video, VideoInfo, ExportWorker
+from core.constants import SERVICE_NAME
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("VideoForge")
+        self.setWindowTitle(SERVICE_NAME)
         self.setMinimumSize(1100, 680)
         self.resize(1280, 760)
         self.setAcceptDrops(True)
@@ -237,7 +238,7 @@ class MainWindow(QMainWindow):
         self.btn_unload.setEnabled(False)
         self._act_unload.setEnabled(False)
         self._status_perm.setText("No video loaded")
-        self.setWindowTitle("VideoForge")
+        self.setWindowTitle(SERVICE_NAME)
 
     def _reset_points(self):
         self.timeline.reset_points()
@@ -274,7 +275,7 @@ class MainWindow(QMainWindow):
             f"{info.video_codec}/{info.audio_codec}  |  "
             f"{size_mb:.1f} MB"
         )
-        self.setWindowTitle(f"VideoForge — {os.path.basename(path)}")
+        self.setWindowTitle(f"{SERVICE_NAME} — {os.path.basename(path)}")
 
     # ------------------------------------------------------------------
     # Timeline callbacks

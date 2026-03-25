@@ -1,4 +1,4 @@
-# VideoForge 🎬
+# Clipper 🎬
 
 A Python desktop application for loading, scrubbing, trimming, and exporting video clips with FFmpeg.
 
@@ -9,16 +9,6 @@ A Python desktop application for loading, scrubbing, trimming, and exporting vid
 - **Video Playback** — Full playback with play/pause, stop, and frame-by-frame stepping
 - **Custom Timeline Scrubber** — Click or drag to seek; visual tick marks with timecode labels
 - **In/Out Points** — Drag the `I` and `O` handles on the timeline, or press `I`/`O` keys
-- **Platform Presets** — 10 export presets:
-  - YouTube (1080p & 4K H.264)
-  - Instagram Square (1080p)
-  - Instagram Reels / TikTok (9:16 vertical)
-  - Twitter/X (1080p)
-  - Vimeo (1080p)
-  - ProRes 422 (archival)
-  - H.265/HEVC (efficient)
-  - GIF (palette-optimized two-pass)
-  - Custom / Passthrough (copy streams)
 - **Background Export** — FFmpeg runs in a QThread so the UI stays responsive
 - **FFmpeg Log Viewer** — Full encoder output shown in-app
 - **Drag & Drop** — Drop any video file onto the window to load it

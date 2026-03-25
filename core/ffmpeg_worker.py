@@ -13,6 +13,7 @@ from typing import Optional
 
 from PyQt6.QtCore import QThread, pyqtSignal
 
+from core.constants import SERVICE_NAME
 
 # ---------------------------------------------------------------------------
 # Export Presets
@@ -508,7 +509,7 @@ class ExportWorker(QThread):
                 return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
 
             lines = [
-                "VideoForge Export Log",
+                f"{SERVICE_NAME} Export Log",
                 "=" * 40,
                 f"Date:     {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
                 f"Input:    {self.input_path}",
