@@ -1,27 +1,27 @@
-/* Dark Industrial Style Sheet */
+/* Clipper Style Sheet — generated from theme template */
 
 /* ─── Global ─────────────────────────────────────────────────────── */
 
 * {
     font-family: "IBM Plex Mono", "Courier New", monospace;
     font-size: 12px;
-    color: #c8c8d8;
+    color: ${text_primary};
     outline: none;
 }
 
 QMainWindow, QWidget {
-    background-color: #0f0f1a;
+    background-color: ${bg_base};
 }
 
 QSplitter::handle {
-    background-color: #2a2a3e;
+    background-color: ${bg_button};
 }
 
 /* ─── Menu Bar ───────────────────────────────────────────────────── */
 
 QMenuBar {
-    background-color: #0d0d18;
-    border-bottom: 1px solid #2a2a3e;
+    background-color: ${bg_menu};
+    border-bottom: 1px solid ${bg_button};
     padding: 2px 4px;
 }
 
@@ -31,13 +31,13 @@ QMenuBar::item {
 }
 
 QMenuBar::item:selected {
-    background-color: #2a2a4a;
-    color: #00d4aa;
+    background-color: ${bg_selected};
+    color: ${accent};
 }
 
 QMenu {
-    background-color: #14142a;
-    border: 1px solid #3a3a5a;
+    background-color: ${bg_elevated};
+    border: 1px solid ${bg_button_hover};
     padding: 4px 0;
 }
 
@@ -46,13 +46,13 @@ QMenu::item {
 }
 
 QMenu::item:selected {
-    background-color: #2a2a4a;
-    color: #00d4aa;
+    background-color: ${bg_selected};
+    color: ${accent};
 }
 
 QMenu::separator {
     height: 1px;
-    background: #2a2a4a;
+    background: ${bg_selected};
     margin: 4px 0;
 }
 
@@ -64,7 +64,7 @@ QMenu::separator {
 
 #dropLabel {
     background-color: transparent;
-    color: #4a4a6a;
+    color: ${text_faint};
     font-size: 16px;
     font-family: "IBM Plex Mono", monospace;
 }
@@ -72,13 +72,13 @@ QMenu::separator {
 /* ─── Controls Bar ───────────────────────────────────────────────── */
 
 #controlsBar {
-    background-color: #12121f;
-    border-top: 1px solid #2a2a3e;
+    background-color: ${bg_surface};
+    border-top: 1px solid ${bg_button};
 }
 
 #btnPlay {
-    background-color: #00d4aa;
-    color: #0f0f1a;
+    background-color: ${accent};
+    color: ${bg_base};
     border: none;
     border-radius: 22px;
     font-size: 16px;
@@ -86,122 +86,122 @@ QMenu::separator {
 }
 
 #btnPlay:hover {
-    background-color: #00ffcc;
+    background-color: ${accent_bright};
 }
 
 #btnPlay:pressed {
-    background-color: #00a888;
+    background-color: ${accent_dim};
 }
 
 #btnTransport {
-    background-color: #2a2a3e;
-    color: #c8c8d8;
-    border: 1px solid #3a3a5a;
+    background-color: ${bg_button};
+    color: ${text_primary};
+    border: 1px solid ${bg_button_hover};
     border-radius: 4px;
     font-size: 11px;
 }
 
 #btnTransport:hover {
-    background-color: #3a3a5a;
+    background-color: ${bg_button_hover};
     color: #ffffff;
 }
 
 #btnTransport:pressed {
-    background-color: #1a1a2e;
+    background-color: ${bg_input};
 }
 
 #timecodeLabel {
     font-family: "IBM Plex Mono", "Courier New", monospace;
     font-size: 13px;
-    color: #00d4aa;
+    color: ${accent};
     letter-spacing: 1px;
 }
 
 #volumeLabel {
     font-size: 14px;
-    color: #7a7a9a;
+    color: ${text_muted};
 }
 
 /* ─── Timeline Container ─────────────────────────────────────────── */
 
 #timelineContainer {
-    background-color: #12121f;
-    border-top: 1px solid #2a2a3e;
+    background-color: ${bg_surface};
+    border-top: 1px solid ${bg_button};
 }
 
 #btnIO {
-    background-color: #1e1e34;
-    color: #c8c8d8;
-    border: 1px solid #3d5a80;
+    background-color: ${bg_io};
+    color: ${text_primary};
+    border: 1px solid ${border_io};
     border-radius: 4px;
     padding: 5px 14px;
     font-size: 11px;
 }
 
 #btnIO:hover {
-    background-color: #3d5a80;
+    background-color: ${border_io};
     color: #ffffff;
 }
 
 #btnIO:pressed {
-    background-color: #2d4a70;
+    background-color: ${border_io_dim};
 }
 
 #btnIOSecondary {
     background-color: transparent;
-    color: #7a7a9a;
-    border: 1px solid #3a3a5a;
+    color: ${text_muted};
+    border: 1px solid ${bg_button_hover};
     border-radius: 4px;
     padding: 5px 14px;
     font-size: 11px;
 }
 
 #btnIOSecondary:hover {
-    border-color: #ff6b6b;
-    color: #ff6b6b;
+    border-color: ${danger};
+    color: ${danger};
 }
 
 /* ─── Left Panel ─────────────────────────────────────────────────── */
 
 #leftPanel {
-    background-color: #0f0f1a;
+    background-color: ${bg_base};
 }
 
 /* ─── Export Panel ───────────────────────────────────────────────── */
 
 #exportPanel {
-    background-color: #0d0d18;
-    border-left: 1px solid #2a2a3e;
+    background-color: ${bg_menu};
+    border-left: 1px solid ${bg_button};
 }
 
 #panelTitle {
     font-size: 11px;
     font-weight: bold;
     letter-spacing: 3px;
-    color: #4a4a6a;
+    color: ${text_faint};
     padding: 4px 0 8px 0;
-    border-bottom: 1px solid #2a2a3e;
+    border-bottom: 1px solid ${bg_button};
 }
 
 QGroupBox {
-    border: 1px solid #2a2a3e;
+    border: 1px solid ${bg_button};
     border-radius: 4px;
     margin-top: 8px;
     padding-top: 6px;
     font-size: 10px;
-    color: #5a5a7a;
+    color: ${text_muted};
     letter-spacing: 1px;
 }
 
 QGroupBox#panelGroup {
-    background-color: #11111e;
+    background-color: ${bg_group};
 }
 
 QGroupBox::title {
     subcontrol-origin: margin;
     left: 8px;
     padding: 0 4px;
-    color: #5a5a7a;
+    color: ${text_muted};
     font-size: 10px;
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -209,7 +209,7 @@ QGroupBox::title {
 
 #tcLabel {
     font-size: 10px;
-    color: #5a5a7a;
+    color: ${text_muted};
     font-weight: bold;
     letter-spacing: 1px;
 }
@@ -217,15 +217,15 @@ QGroupBox::title {
 #tcValue {
     font-family: "IBM Plex Mono", "Courier New", monospace;
     font-size: 12px;
-    color: #00d4aa;
+    color: ${accent};
 }
 
 #presetCombo {
-    background-color: #1a1a2e;
-    border: 1px solid #3a3a5a;
+    background-color: ${bg_input};
+    border: 1px solid ${bg_button_hover};
     border-radius: 4px;
     padding: 6px 8px;
-    color: #c8c8d8;
+    color: ${text_primary};
 }
 
 #presetCombo::drop-down {
@@ -234,44 +234,44 @@ QGroupBox::title {
 }
 
 #presetCombo QAbstractItemView {
-    background-color: #14142a;
-    border: 1px solid #3a3a5a;
-    selection-background-color: #2a2a4a;
-    color: #c8c8d8;
+    background-color: ${bg_elevated};
+    border: 1px solid ${bg_button_hover};
+    selection-background-color: ${bg_selected};
+    color: ${text_primary};
 }
 
 #presetInfo {
     font-size: 10px;
-    color: #5a5a7a;
+    color: ${text_muted};
     padding: 0 4px;
 }
 
 #pathEdit {
-    background-color: #1a1a2e;
-    border: 1px solid #3a3a5a;
+    background-color: ${bg_input};
+    border: 1px solid ${bg_button_hover};
     border-radius: 4px;
     padding: 5px 8px;
-    color: #c8c8d8;
+    color: ${text_primary};
 }
 
 #pathEdit:focus {
-    border-color: #00d4aa;
+    border-color: ${accent};
 }
 
 #btnBrowse {
-    background-color: #2a2a3e;
-    border: 1px solid #3a3a5a;
+    background-color: ${bg_button};
+    border: 1px solid ${bg_button_hover};
     border-radius: 4px;
-    color: #c8c8d8;
+    color: ${text_primary};
 }
 
 #btnBrowse:hover {
-    background-color: #3a3a5a;
+    background-color: ${bg_button_hover};
 }
 
 #btnExport {
-    background-color: #00d4aa;
-    color: #0f0f1a;
+    background-color: ${accent};
+    color: ${bg_base};
     border: none;
     border-radius: 6px;
     font-size: 13px;
@@ -280,45 +280,45 @@ QGroupBox::title {
 }
 
 #btnExport:hover {
-    background-color: #00ffcc;
+    background-color: ${accent_bright};
 }
 
 #btnExport:pressed {
-    background-color: #00a888;
+    background-color: ${accent_dim};
 }
 
 #btnExport:disabled {
-    background-color: #2a2a3e;
-    color: #4a4a6a;
+    background-color: ${bg_button};
+    color: ${text_faint};
 }
 
 #btnCancel {
     background-color: transparent;
-    color: #ff6b6b;
-    border: 1px solid #ff6b6b;
+    color: ${danger};
+    border: 1px solid ${danger};
     border-radius: 4px;
     font-size: 12px;
 }
 
 #btnCancel:hover {
-    background-color: #ff6b6b;
-    color: #0f0f1a;
+    background-color: ${danger};
+    color: ${bg_base};
 }
 
 QProgressBar#exportProgress {
-    background-color: #1a1a2e;
-    border: 1px solid #3a3a5a;
+    background-color: ${bg_input};
+    border: 1px solid ${bg_button_hover};
     border-radius: 4px;
     height: 18px;
     text-align: center;
-    color: #c8c8d8;
+    color: ${text_primary};
     font-size: 11px;
 }
 
 QProgressBar#exportProgress::chunk {
     background-color: qlineargradient(
         x1:0, y1:0, x2:1, y2:0,
-        stop:0 #00a888, stop:1 #00d4aa
+        stop:0 ${accent_dim}, stop:1 ${accent}
     );
     border-radius: 3px;
 }
@@ -329,10 +329,10 @@ QProgressBar#exportProgress::chunk {
 }
 
 #logView {
-    background-color: #090914;
-    border: 1px solid #2a2a3e;
+    background-color: ${bg_deepest};
+    border: 1px solid ${bg_button};
     border-radius: 3px;
-    color: #6a8a6a;
+    color: ${text_log};
     font-family: "IBM Plex Mono", "Courier New", monospace;
     font-size: 9px;
 }
@@ -340,8 +340,8 @@ QProgressBar#exportProgress::chunk {
 /* ─── Audio Mix Bar ──────────────────────────────────────────────── */
 
 #audioMixBar {
-    background-color: #0e0e1c;
-    border-top: 1px solid #2a2a3e;
+    background-color: ${bg_menu};
+    border-top: 1px solid ${bg_button};
 }
 
 #audioStreamRow {
@@ -350,55 +350,55 @@ QProgressBar#exportProgress::chunk {
 
 #audioStreamLabel {
     font-size: 11px;
-    color: #8a8aaa;
+    color: ${text_secondary};
     letter-spacing: 0.5px;
 }
 
 #btnAudioMonitor {
-    background-color: #1a1a2e;
-    color: #7a7a9a;
-    border: 1px solid #3a3a5a;
+    background-color: ${bg_input};
+    color: ${text_muted};
+    border: 1px solid ${bg_button_hover};
     border-radius: 3px;
     font-size: 10px;
     padding: 2px 4px;
 }
 
 #btnAudioMonitor:checked {
-    background-color: #003d2e;
-    color: #00d4aa;
-    border-color: #00d4aa;
+    background-color: ${accent_bg};
+    color: ${accent};
+    border-color: ${accent};
 }
 
 #btnAudioMonitor:hover {
-    border-color: #00d4aa;
-    color: #c8c8d8;
+    border-color: ${accent};
+    color: ${text_primary};
 }
 
 #btnAudioMute {
-    background-color: #1a1a2e;
-    border: 1px solid #3a3a5a;
+    background-color: ${bg_input};
+    border: 1px solid ${bg_button_hover};
     border-radius: 3px;
     font-size: 13px;
     padding: 1px;
 }
 
 #btnAudioMute:checked {
-    background-color: #3a1a1a;
-    border-color: #ff6b6b;
+    background-color: ${danger_bg};
+    border-color: ${danger};
 }
 
 #btnAudioMute:hover {
-    background-color: #2a2a3e;
+    background-color: ${bg_button};
 }
 
 QSlider#audioVolSlider::groove:horizontal {
     height: 4px;
-    background: #2a2a3e;
+    background: ${bg_button};
     border-radius: 2px;
 }
 
 QSlider#audioVolSlider::handle:horizontal {
-    background: #00d4aa;
+    background: ${accent};
     border: none;
     width: 10px;
     height: 10px;
@@ -407,40 +407,40 @@ QSlider#audioVolSlider::handle:horizontal {
 }
 
 QSlider#audioVolSlider::sub-page:horizontal {
-    background: #00a888;
+    background: ${accent_dim};
     border-radius: 2px;
 }
 
 #audioVolLabel {
     font-size: 10px;
-    color: #5a5a7a;
+    color: ${text_faint};
     font-family: "IBM Plex Mono", "Courier New", monospace;
 }
 
 /* ─── Status Bar ─────────────────────────────────────────────────── */
 
 QStatusBar {
-    background-color: #0a0a15;
-    border-top: 1px solid #2a2a3e;
+    background-color: ${bg_deepest};
+    border-top: 1px solid ${bg_button};
     font-size: 11px;
-    color: #5a5a7a;
+    color: ${text_muted};
 }
 
 QStatusBar QLabel {
     font-size: 11px;
-    color: #5a5a7a;
+    color: ${text_muted};
 }
 
 /* ─── Scroll Bars ────────────────────────────────────────────────── */
 
 QScrollBar:vertical {
-    background: #0f0f1a;
+    background: ${bg_base};
     width: 8px;
     border-radius: 4px;
 }
 
 QScrollBar::handle:vertical {
-    background: #3a3a5a;
+    background: ${bg_button_hover};
     border-radius: 4px;
     min-height: 20px;
 }
@@ -452,9 +452,9 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
 /* ─── Tooltip ────────────────────────────────────────────────────── */
 
 QToolTip {
-    background-color: #14142a;
-    color: #00d4aa;
-    border: 1px solid #3d5a80;
+    background-color: ${bg_elevated};
+    color: ${accent};
+    border: 1px solid ${border_io};
     padding: 4px 8px;
     font-family: "IBM Plex Mono", monospace;
     font-size: 11px;

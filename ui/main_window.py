@@ -10,31 +10,40 @@ from PyQt6.QtWidgets import (
     QSplitter, QFileDialog, QMessageBox, QLabel,
     QMenuBar, QStatusBar, QDockWidget
 )
+from PyQt6.QtGui import QActionGroup
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QAction, QKeySequence, QDragEnterEvent, QDropEvent
 
 from ui.player_widget import VideoPlayerWidget
 from ui.timeline_widget import TimelineWidget
 from ui.export_panel import ExportPanel
+from ui.themes import ThemeManager, BUILTIN_THEME_NAMES
+from ui.theme_editor import ThemeEditorDialog
 from core.ffmpeg_worker import probe_video, VideoInfo, ExportWorker
 from core.constants import SERVICE_NAME
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, theme_manager: ThemeManager):
         super().__init__()
         self.setWindowTitle(SERVICE_NAME)
         self.setMinimumSize(1100, 680)
         self.resize(1280, 760)
         self.setAcceptDrops(True)
 
+        self._theme_manager = theme_manager
         self._video_info: VideoInfo = None
         self._export_worker: ExportWorker = None
         self._points_modified: bool = False
+        self._theme_editor: ThemeEditorDialog = None
 
         self._build_ui()
         self._build_menu()
         self._build_shortcuts()
+
+        # Apply current palette to custom-painted widgets immediately
+        self.timeline.apply_theme(self._theme_manager.palette)
+        self._theme_manager.theme_changed.connect(self._on_theme_changed)
 
     # ------------------------------------------------------------------
     # UI Construction
@@ -152,6 +161,17 @@ class MainWindow(QMainWindow):
         act_quit.triggered.connect(self.close)
         file_menu.addAction(act_quit)
 
+        # View menu — theme selection
+        view_menu = mb.addMenu("&View")
+        self._theme_menu = view_menu.addMenu("&Theme")
+        self._theme_action_group = QActionGroup(self)
+        self._theme_action_group.setExclusive(True)
+        self._theme_actions: dict[str, QAction] = {}
+        self._rebuild_theme_menu()
+        self._theme_manager.custom_themes_changed.connect(
+            lambda _: self._rebuild_theme_menu()
+        )
+
         # Playback menu
         pb_menu = mb.addMenu("&Playback")
 
@@ -184,6 +204,58 @@ class MainWindow(QMainWindow):
 
     def _build_shortcuts(self):
         pass  # Shortcuts are set in menu actions
+
+    # ------------------------------------------------------------------
+    # Theme
+    # ------------------------------------------------------------------
+
+    def _rebuild_theme_menu(self) -> None:
+        self._theme_menu.clear()
+        for act in self._theme_action_group.actions():
+            self._theme_action_group.removeAction(act)
+        self._theme_actions = {}
+
+        current = self._theme_manager.current_theme
+
+        def _add_theme_action(name: str) -> None:
+            act = QAction(name, self)
+            act.setCheckable(True)
+            act.setChecked(name == current)
+            act.triggered.connect(lambda _checked, n=name: self._theme_manager.apply_theme(n))
+            self._theme_action_group.addAction(act)
+            self._theme_menu.addAction(act)
+            self._theme_actions[name] = act
+
+        # Built-in themes
+        for name in BUILTIN_THEME_NAMES:
+            _add_theme_action(name)
+
+        # Custom themes (separated)
+        custom = self._theme_manager.custom_theme_names
+        if custom:
+            self._theme_menu.addSeparator()
+            for name in custom:
+                _add_theme_action(name)
+
+        # Editor entry point
+        self._theme_menu.addSeparator()
+        act_new = QAction("Create Theme…", self)
+        act_new.triggered.connect(self._open_theme_editor)
+        self._theme_menu.addAction(act_new)
+
+    def _open_theme_editor(self) -> None:
+        if self._theme_editor and self._theme_editor.isVisible():
+            self._theme_editor.activateWindow()
+            self._theme_editor.raise_()
+            return
+        self._theme_editor = ThemeEditorDialog(self._theme_manager, parent=self)
+        self._theme_editor.show()
+
+    def _on_theme_changed(self, theme_name: str, palette: dict) -> None:
+        self.timeline.apply_theme(palette)
+        # "" is emitted during live preview — skip checkmark update
+        if theme_name in self._theme_actions:
+            self._theme_actions[theme_name].setChecked(True)
 
     # ------------------------------------------------------------------
     # File Loading

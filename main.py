@@ -15,6 +15,7 @@ from PyQt6.QtGui import QIcon
 
 from core.constants import *
 from ui.main_window import MainWindow
+from ui.themes import ThemeManager
 
 
 def main():
@@ -24,11 +25,11 @@ def main():
     app.setApplicationVersion(SERVICE_VERSION)
     app.setOrganizationName(SERVICE_NAME)
 
-    # Apply global stylesheet
-    with open(os.path.join(os.path.dirname(__file__), "ui", "style.qss"), "r") as f:
-        app.setStyleSheet(f.read())
+    # Apply saved (or default) theme
+    theme_manager = ThemeManager(app)
+    theme_manager.apply_saved()
 
-    window = MainWindow()
+    window = MainWindow(theme_manager)
     window.show()
 
     sys.exit(app.exec())

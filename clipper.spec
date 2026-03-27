@@ -19,7 +19,7 @@ BUNDLE_FFMPEG = False  # set True if bundling ffmpeg.exe/ffprobe.exe here
 # ---------------------------------------------------------------------------
 
 datas = [
-    ('ui/style.qss', 'ui'),
+    ('ui/style_template.qss', 'ui'),
 ]
 
 if BUNDLE_FFMPEG:

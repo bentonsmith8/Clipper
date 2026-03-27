@@ -32,6 +32,16 @@ class TimelineWidget(QWidget):
     _TRACK_H = 24
     _TICK_AREA_H = 20
 
+    # Default colours (Dark Industrial) — overridden by apply_theme()
+    _C_BG          = "#1a1a2e"
+    _C_TRACK       = "#2a2a3e"
+    _C_RANGE_TOP   = "#3d5a80"
+    _C_RANGE_BOT   = "#2d4a70"
+    _C_TICK_FAINT  = "#4a4a6a"
+    _C_TICK_LABEL  = "#8a8aaa"
+    _C_HANDLE_IN   = "#00d4aa"
+    _C_HANDLE_OUT  = "#ff6b6b"
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setMinimumHeight(72)
@@ -46,6 +56,18 @@ class TimelineWidget(QWidget):
 
         self._dragging = None   # "playhead" | "in" | "out" | None
         self._hover_x = -1
+
+    def apply_theme(self, palette: dict) -> None:
+        """Update painter colours from a theme palette dict and repaint."""
+        self._C_BG         = palette.get("bg_input",      self._C_BG)
+        self._C_TRACK      = palette.get("bg_button",     self._C_TRACK)
+        self._C_RANGE_TOP  = palette.get("border_io",     self._C_RANGE_TOP)
+        self._C_RANGE_BOT  = palette.get("border_io_dim", self._C_RANGE_BOT)
+        self._C_TICK_FAINT = palette.get("text_faint",    self._C_TICK_FAINT)
+        self._C_TICK_LABEL = palette.get("text_secondary",self._C_TICK_LABEL)
+        self._C_HANDLE_IN  = palette.get("accent",        self._C_HANDLE_IN)
+        self._C_HANDLE_OUT = palette.get("danger",        self._C_HANDLE_OUT)
+        self.update()
 
     # ------------------------------------------------------------------
     # Public API
@@ -123,14 +145,13 @@ class TimelineWidget(QWidget):
         w = self.width()
 
         # Background
-        p.fillRect(self.rect(), QColor("#1a1a2e"))
+        p.fillRect(self.rect(), QColor(self._C_BG))
 
         # Tick marks
         self._draw_ticks(p, r)
 
         # Full track background
-        track_bg = QColor("#2a2a3e")
-        p.fillRect(r, track_bg)
+        p.fillRect(r, QColor(self._C_TRACK))
 
         # In/Out range highlight
         if self._duration > 0:
@@ -138,18 +159,18 @@ class TimelineWidget(QWidget):
             out_x = self._sec_to_x(self._out_point)
             range_rect = QRect(in_x, r.top(), out_x - in_x, r.height())
             grad = QLinearGradient(QPointF(range_rect.topLeft()), QPointF(range_rect.bottomLeft()))
-            grad.setColorAt(0, QColor("#3d5a80"))
-            grad.setColorAt(1, QColor("#2d4a70"))
+            grad.setColorAt(0, QColor(self._C_RANGE_TOP))
+            grad.setColorAt(1, QColor(self._C_RANGE_BOT))
             p.fillRect(range_rect, QBrush(grad))
 
             # Track border
-            p.setPen(QPen(QColor("#4a4a6a"), 1))
+            p.setPen(QPen(QColor(self._C_TICK_FAINT), 1))
             p.drawRect(r)
 
             # In-point handle
-            self._draw_handle(p, in_x, r, QColor("#00d4aa"), "◀", "I")
+            self._draw_handle(p, in_x, r, QColor(self._C_HANDLE_IN), "◀", "I")
             # Out-point handle
-            self._draw_handle(p, out_x, r, QColor("#ff6b6b"), "▶", "O")
+            self._draw_handle(p, out_x, r, QColor(self._C_HANDLE_OUT), "▶", "O")
 
             # Playhead
             px = self._sec_to_x(self._position)
@@ -176,7 +197,7 @@ class TimelineWidget(QWidget):
         if self._duration <= 0:
             return
 
-        p.setPen(QPen(QColor("#4a4a6a"), 1))
+        p.setPen(QPen(QColor(self._C_TICK_FAINT), 1))
         font = QFont("Courier New", 8)
         p.setFont(font)
         fm = QFontMetrics(font)
@@ -197,9 +218,9 @@ class TimelineWidget(QWidget):
             p.drawLine(x, r.top() - 4, x, r.top() - 1)
             label = self._format_tc_short(t)
             text_w = fm.horizontalAdvance(label)
-            p.setPen(QColor("#7a7a9a"))
+            p.setPen(QColor(self._C_TICK_LABEL))
             p.drawText(x - text_w // 2, r.top() - 6, label)
-            p.setPen(QPen(QColor("#4a4a6a"), 1))
+            p.setPen(QPen(QColor(self._C_TICK_FAINT), 1))
             t += interval
 
     def _draw_handle(self, p: QPainter, x: int, r: QRect, color: QColor, arrow: str, label: str):
