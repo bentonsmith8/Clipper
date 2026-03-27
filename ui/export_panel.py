@@ -10,7 +10,8 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QComboBox, QPushButton, QProgressBar, QTextEdit,
     QGroupBox, QFileDialog, QLineEdit,
-    QCheckBox, QDoubleSpinBox, QFormLayout
+    QCheckBox, QDoubleSpinBox, QFormLayout,
+    QScrollArea, QFrame,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
@@ -37,16 +38,28 @@ class ExportPanel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("exportPanel")
-        self.setMinimumWidth(320)
-        self.setMaximumWidth(440)
+        self.setMinimumWidth(380)
         self._in_sec = 0.0
         self._out_sec = 0.0
         self._build_ui()
 
     def _build_ui(self):
-        layout = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+
+        content = QWidget()
+        layout = QVBoxLayout(content)
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(10)
+
+        scroll.setWidget(content)
+        outer.addWidget(scroll)
 
         # Title
         title = QLabel("EXPORT")

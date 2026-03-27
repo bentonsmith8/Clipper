@@ -106,9 +106,9 @@ class MainWindow(QMainWindow):
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.addWidget(left_panel)
         splitter.addWidget(self.export_panel)
-        splitter.setStretchFactor(0, 4)
-        splitter.setStretchFactor(1, 1)
         splitter.setHandleWidth(2)
+        # Give the export panel a fixed initial width; the user can drag to adjust.
+        splitter.setSizes([9999, 420])
 
         root.addWidget(splitter)
 
