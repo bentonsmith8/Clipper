@@ -19,7 +19,7 @@ from ui.timeline_widget import TimelineWidget
 from ui.export_panel import ExportPanel
 from ui.themes import ThemeManager, BUILTIN_THEME_NAMES
 from ui.theme_editor import ThemeEditorDialog
-from core.ffmpeg_worker import probe_video, VideoInfo, ExportWorker
+from core.ffmpeg_worker import probe_video, VideoInfo, ExportWorker, AudioPreviewWorker
 from core.constants import SERVICE_NAME
 
 
@@ -34,6 +34,7 @@ class MainWindow(QMainWindow):
         self._theme_manager = theme_manager
         self._video_info: VideoInfo = None
         self._export_worker: ExportWorker = None
+        self._preview_worker: AudioPreviewWorker = None
         self._points_modified: bool = False
         self._theme_editor: ThemeEditorDialog = None
 
@@ -137,6 +138,8 @@ class MainWindow(QMainWindow):
         self.export_panel.export_requested.connect(self._start_export)
         self.export_panel.cancel_requested.connect(self._cancel_export)
         self.btn_unload.clicked.connect(self._unload_video)
+        self.player.audio_preview_requested.connect(self._on_audio_preview_requested)
+        self.player.video_dropped.connect(self._on_video_dropped)
 
     def _build_menu(self):
         mb = self.menuBar()
@@ -262,7 +265,7 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------
 
     def _open_file_dialog(self):
-        if not self._confirm_replace():
+        if not self._confirm_replace(action="Open a new video"):
             return
         path, _ = QFileDialog.getOpenFileName(
             self, "Open Video File", "",
@@ -271,18 +274,47 @@ class MainWindow(QMainWindow):
         if path:
             self._load_video(path)
 
-    def _confirm_replace(self) -> bool:
-        """Return True if it's safe to load a new file. Prompts if points were modified."""
+    def _confirm_replace(self, action: str = "Load a new video") -> bool:
+        """Return True if safe to replace the current video. Prompts only when trim points have been adjusted."""
         if not self._video_info:
             return True
         if not self._points_modified:
             return True
         reply = QMessageBox.question(
             self, "Replace Video?",
-            "You have unsaved in/out points.\nLoad a new video and discard them?",
+            f"You've adjusted the trim points.\n{action} and discard them?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
         return reply == QMessageBox.StandardButton.Yes
+
+    # ------------------------------------------------------------------
+    # Audio preview
+    # ------------------------------------------------------------------
+
+    def _on_audio_preview_requested(self):
+        if not self._video_info:
+            return
+
+        if self._preview_worker and self._preview_worker.isRunning():
+            self._preview_worker.terminate()
+
+        self._preview_worker = AudioPreviewWorker(
+            input_path=self._video_info.path,
+            start_sec=0.0,
+            end_sec=self._video_info.duration,
+            audio_mix=self.player.get_audio_mix_config(),
+        )
+        self._preview_worker.ready.connect(self._on_preview_ready)
+        self._preview_worker.error.connect(self._on_preview_error)
+        self._preview_worker.start()
+
+    def _on_preview_ready(self, path: str):
+        self.player.start_audio_preview(path, 0.0)
+
+    def _on_preview_error(self, msg: str):
+        self.player.btn_preview_mix.setText("Preview Audio Mix")
+        self.player.btn_preview_mix.setEnabled(True)
+        QMessageBox.critical(self, "Audio Preview Failed", msg)
 
     def _unload_video(self):
         if self._export_worker and self._export_worker.isRunning():
@@ -298,6 +330,10 @@ class MainWindow(QMainWindow):
             if reply != QMessageBox.StandardButton.Yes:
                 return
 
+        self.player.stop_audio_preview()
+        if self._preview_worker and self._preview_worker.isRunning():
+            self._preview_worker.terminate()
+            self._preview_worker = None
         self.player.unload()
         self.player.set_audio_streams([])
         self.timeline.set_duration(0)
@@ -436,15 +472,24 @@ class MainWindow(QMainWindow):
     # Drag & Drop
     # ------------------------------------------------------------------
 
+    _VIDEO_EXTENSIONS = {
+        ".mp4", ".mov", ".mkv", ".avi", ".webm",
+        ".m4v", ".flv", ".wmv", ".mxf", ".ts", ".m2ts",
+    }
+
+    def _on_video_dropped(self, path: str):
+        if not self._confirm_replace(action=f'Load "{os.path.basename(path)}"'):
+            return
+        self._load_video(path)
+
     def dragEnterEvent(self, event: QDragEnterEvent):
         if event.mimeData().hasUrls():
             url = event.mimeData().urls()[0]
             if url.isLocalFile():
-                event.acceptProposedAction()
+                ext = os.path.splitext(url.toLocalFile())[1].lower()
+                if ext in self._VIDEO_EXTENSIONS:
+                    event.acceptProposedAction()
 
     def dropEvent(self, event: QDropEvent):
-        if not self._confirm_replace():
-            return
         url = event.mimeData().urls()[0]
-        path = url.toLocalFile()
-        self._load_video(path)
+        self._on_video_dropped(url.toLocalFile())

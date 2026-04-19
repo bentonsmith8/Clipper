@@ -3,19 +3,21 @@ ui/export_panel.py
 Right-hand panel for configuring and running the export.
 """
 
+import json
 import os
 import shlex
 from typing import Optional
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QComboBox, QPushButton, QProgressBar, QTextEdit,
-    QGroupBox, QFileDialog, QLineEdit,
+    QGroupBox, QFileDialog, QLineEdit, QInputDialog,
     QCheckBox, QDoubleSpinBox, QFormLayout,
-    QScrollArea, QFrame,
+    QScrollArea, QFrame, QMessageBox,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, QSettings, pyqtSignal
 from PyQt6.QtGui import QFont
 
+from core.constants import SERVICE_NAME
 from core.ffmpeg_worker import EXPORT_PRESETS, HW_ACCEL_OPTIONS, _parse_bitrate_bps
 
 
@@ -23,11 +25,11 @@ class ExportPanel(QWidget):
     """
     Panel containing:
     - In/Out timecode displays
-    - Platform preset loader
+    - Platform preset loader with save/delete for custom presets
     - Editable encoding parameter fields
     - Hardware acceleration selector
     - Target file size mode
-    - Output path chooser + save-log checkbox
+    - Output directory + filename fields
     - Export button + progress bar
     - FFmpeg log viewer
     """
@@ -41,7 +43,13 @@ class ExportPanel(QWidget):
         self.setMinimumWidth(380)
         self._in_sec = 0.0
         self._out_sec = 0.0
+        self._custom_presets: dict[str, dict] = {}
+        self._load_custom_presets()
         self._build_ui()
+
+    # ------------------------------------------------------------------
+    # UI Construction
+    # ------------------------------------------------------------------
 
     def _build_ui(self):
         outer = QVBoxLayout(self)
@@ -92,22 +100,45 @@ class ExportPanel(QWidget):
         clip_layout.addLayout(dur_row)
         layout.addWidget(clip_group)
 
-        # ── Preset loader ──────────────────────────────────────────────
-        preset_group = QGroupBox("Load Preset")
+        # ── Presets ────────────────────────────────────────────────────
+        preset_group = QGroupBox("Presets")
         preset_group.setObjectName("panelGroup")
-        preset_layout = QHBoxLayout(preset_group)
-        preset_layout.setSpacing(6)
+        preset_v = QVBoxLayout(preset_group)
+        preset_v.setSpacing(6)
+        preset_v.setContentsMargins(10, 14, 10, 10)
+
+        # Row 1: combo + Apply
+        load_row = QHBoxLayout()
+        load_row.setSpacing(6)
         self.preset_combo = QComboBox()
         self.preset_combo.setObjectName("presetCombo")
-        for name in EXPORT_PRESETS.keys():
-            self.preset_combo.addItem(name)
+        self._refresh_preset_combo()
         btn_apply = QPushButton("Apply")
         btn_apply.setObjectName("btnBrowse")
         btn_apply.setFixedWidth(52)
         btn_apply.clicked.connect(lambda: self._load_preset_to_fields(self.preset_combo.currentText()))
-        preset_layout.addWidget(self.preset_combo)
-        preset_layout.addWidget(btn_apply)
+        load_row.addWidget(self.preset_combo)
+        load_row.addWidget(btn_apply)
+        preset_v.addLayout(load_row)
+
+        # Row 2: Save + Delete
+        manage_row = QHBoxLayout()
+        manage_row.setSpacing(6)
+        btn_save_preset = QPushButton("Save as Preset…")
+        btn_save_preset.setObjectName("btnBrowse")
+        btn_save_preset.clicked.connect(self._on_save_preset_clicked)
+        self.btn_delete_preset = QPushButton("Delete")
+        self.btn_delete_preset.setObjectName("btnBrowse")
+        self.btn_delete_preset.setFixedWidth(56)
+        self.btn_delete_preset.clicked.connect(self._on_delete_preset_clicked)
+        manage_row.addWidget(btn_save_preset)
+        manage_row.addWidget(self.btn_delete_preset)
+        preset_v.addLayout(manage_row)
+
         layout.addWidget(preset_group)
+
+        self.preset_combo.currentTextChanged.connect(self._update_delete_btn_state)
+        self._update_delete_btn_state(self.preset_combo.currentText())
 
         # ── Encoding parameters ────────────────────────────────────────
         enc_group = QGroupBox("Encoding Parameters")
@@ -191,26 +222,44 @@ class ExportPanel(QWidget):
         self.target_size_check.toggled.connect(self._on_target_size_toggled)
         self.target_size_spin.valueChanged.connect(self._update_target_size_estimate)
 
-        # ── Output path ────────────────────────────────────────────────
+        # ── Output file ────────────────────────────────────────────────
         out_group = QGroupBox("Output File")
         out_group.setObjectName("panelGroup")
         out_layout = QVBoxLayout(out_group)
         out_layout.setContentsMargins(10, 14, 10, 10)
         out_layout.setSpacing(6)
 
-        path_row = QHBoxLayout()
-        self.output_path_edit = QLineEdit()
-        self.output_path_edit.setObjectName("pathEdit")
-        self.output_path_edit.setPlaceholderText("Choose output path...")
-        self.btn_browse = QPushButton("…")
-        self.btn_browse.setFixedWidth(32)
-        self.btn_browse.setObjectName("btnBrowse")
-        self.btn_browse.clicked.connect(self._browse_output)
-        path_row.addWidget(self.output_path_edit)
-        path_row.addWidget(self.btn_browse)
-        out_layout.addLayout(path_row)
+        dir_row = QHBoxLayout()
+        dir_row.setSpacing(4)
+        dir_lbl = QLabel("Folder:")
+        dir_lbl.setObjectName("tcLabel")
+        dir_lbl.setFixedWidth(52)
+        self.output_dir_edit = QLineEdit()
+        self.output_dir_edit.setObjectName("pathEdit")
+        self.output_dir_edit.setPlaceholderText("Output folder…")
+        btn_browse_dir = QPushButton("…")
+        btn_browse_dir.setFixedWidth(32)
+        btn_browse_dir.setObjectName("btnBrowse")
+        btn_browse_dir.clicked.connect(self._browse_output_dir)
+        dir_row.addWidget(dir_lbl)
+        dir_row.addWidget(self.output_dir_edit)
+        dir_row.addWidget(btn_browse_dir)
+        out_layout.addLayout(dir_row)
+
+        name_row = QHBoxLayout()
+        name_row.setSpacing(4)
+        name_lbl = QLabel("Filename:")
+        name_lbl.setObjectName("tcLabel")
+        name_lbl.setFixedWidth(52)
+        self.output_filename_edit = QLineEdit()
+        self.output_filename_edit.setObjectName("pathEdit")
+        self.output_filename_edit.setPlaceholderText("e.g. clip_export.mp4")
+        name_row.addWidget(name_lbl)
+        name_row.addWidget(self.output_filename_edit)
+        out_layout.addLayout(name_row)
 
         self.save_log_check = QCheckBox("Save encoding params as .txt")
+        self.save_log_check.setChecked(True)
         out_layout.addWidget(self.save_log_check)
 
         layout.addWidget(out_group)
@@ -304,7 +353,6 @@ class ExportPanel(QWidget):
         return None
 
     def get_hw_accel(self) -> str:
-        """Return the ffmpeg hw_accel flag value (empty string = none)."""
         display_name = self.hw_accel_combo.currentText()
         return HW_ACCEL_OPTIONS.get(display_name, "")
 
@@ -312,10 +360,19 @@ class ExportPanel(QWidget):
         return self.save_log_check.isChecked()
 
     def get_output_path(self) -> str:
-        return self.output_path_edit.text().strip()
+        dir_ = self.output_dir_edit.text().strip()
+        name = self.output_filename_edit.text().strip()
+        if not name:
+            return ""
+        return os.path.join(dir_, name) if dir_ else name
 
     def set_output_path(self, path: str):
-        self.output_path_edit.setText(path)
+        if path:
+            self.output_dir_edit.setText(os.path.dirname(path))
+            self.output_filename_edit.setText(os.path.basename(path))
+        else:
+            self.output_dir_edit.setText("")
+            self.output_filename_edit.setText("")
 
     def set_exporting(self, exporting: bool):
         self.btn_export.setVisible(not exporting)
@@ -341,17 +398,99 @@ class ExportPanel(QWidget):
         self.status_label.setText(f'<span style="color:{color}">{msg}</span>')
 
     # ------------------------------------------------------------------
-    # Internal
+    # Custom preset persistence
     # ------------------------------------------------------------------
 
-    def _load_preset_to_fields(self, name: str):
-        if name not in EXPORT_PRESETS:
+    def _settings(self) -> QSettings:
+        return QSettings(SERVICE_NAME, SERVICE_NAME)
+
+    def _load_custom_presets(self):
+        s = self._settings()
+        raw = s.value("export_custom_presets", "[]")
+        try:
+            entries = json.loads(raw)
+            self._custom_presets = {e["name"]: e["config"] for e in entries}
+        except Exception:
+            self._custom_presets = {}
+
+    def _persist_custom_presets(self):
+        entries = [{"name": n, "config": c} for n, c in self._custom_presets.items()]
+        self._settings().setValue("export_custom_presets", json.dumps(entries))
+
+    def _refresh_preset_combo(self):
+        current = self.preset_combo.currentText() if hasattr(self, "preset_combo") else ""
+        self.preset_combo.blockSignals(True)
+        self.preset_combo.clear()
+        for name in EXPORT_PRESETS:
+            self.preset_combo.addItem(name)
+        if self._custom_presets:
+            self.preset_combo.insertSeparator(self.preset_combo.count())
+            for name in self._custom_presets:
+                self.preset_combo.addItem(name)
+        # Restore selection if still present
+        idx = self.preset_combo.findText(current)
+        if idx >= 0:
+            self.preset_combo.setCurrentIndex(idx)
+        self.preset_combo.blockSignals(False)
+
+    def _update_delete_btn_state(self, name: str):
+        self.btn_delete_preset.setEnabled(name in self._custom_presets)
+
+    # ------------------------------------------------------------------
+    # Internal slots
+    # ------------------------------------------------------------------
+
+    def _on_save_preset_clicked(self):
+        name, ok = QInputDialog.getText(
+            self, "Save Preset", "Preset name:",
+        )
+        if not ok or not name.strip():
             return
-        p = EXPORT_PRESETS[name]
+        name = name.strip()
+        if name in EXPORT_PRESETS:
+            QMessageBox.warning(self, "Name Taken",
+                                f'"{name}" is a built-in preset and cannot be overwritten.')
+            return
+        if name in self._custom_presets:
+            reply = QMessageBox.question(
+                self, "Overwrite?",
+                f'A custom preset named "{name}" already exists. Overwrite it?',
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+
+        self._custom_presets[name] = self.get_export_config()
+        self._persist_custom_presets()
+        self._refresh_preset_combo()
+        # Select the newly saved preset
+        idx = self.preset_combo.findText(name)
+        if idx >= 0:
+            self.preset_combo.setCurrentIndex(idx)
+        self._update_delete_btn_state(name)
+
+    def _on_delete_preset_clicked(self):
+        name = self.preset_combo.currentText()
+        if name not in self._custom_presets:
+            return
+        reply = QMessageBox.question(
+            self, "Delete Preset",
+            f'Delete the custom preset "{name}"?',
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        del self._custom_presets[name]
+        self._persist_custom_presets()
+        self._refresh_preset_combo()
+        self._update_delete_btn_state(self.preset_combo.currentText())
+
+    def _load_preset_to_fields(self, name: str):
+        p = EXPORT_PRESETS.get(name) or self._custom_presets.get(name)
+        if p is None:
+            return
         self.enc_vcodec.setText(p.get("vcodec") or "")
         self.enc_acodec.setText(p.get("acodec") or "")
         self.enc_vbitrate.setText(p.get("video_bitrate") or "")
-        self.enc_crf.clear()
+        self.enc_crf.setText(p.get("crf") or "")
         self.enc_abitrate.setText(p.get("audio_bitrate") or "")
         self.enc_resolution.setText(p.get("resolution") or "")
         self.enc_fps.setText(p.get("fps") or "")
@@ -387,16 +526,11 @@ class ExportPanel(QWidget):
         video_bps = max(0, total_bps - audio_bps)
         self.target_size_est.setText(f"~{int(video_bps / 1000)} kbps")
 
-    def _browse_output(self):
-        ext = self.enc_format.text().strip() or "mp4"
-        path, _ = QFileDialog.getSaveFileName(
-            self, "Save Export As", "",
-            f"Video (*.{ext});;All Files (*)"
-        )
+    def _browse_output_dir(self):
+        start = self.output_dir_edit.text().strip() or ""
+        path = QFileDialog.getExistingDirectory(self, "Select Output Folder", start)
         if path:
-            if not path.endswith(f".{ext}"):
-                path += f".{ext}"
-            self.output_path_edit.setText(path)
+            self.output_dir_edit.setText(path)
 
     @staticmethod
     def _fmt(seconds: float) -> str:
