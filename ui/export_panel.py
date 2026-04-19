@@ -158,7 +158,7 @@ class ExportPanel(QWidget):
         self.enc_vcodec     = _field("e.g. libx264")
         self.enc_acodec     = _field("e.g. aac  (or none)")
         self.enc_vbitrate   = _field("e.g. 8000k")
-        self.enc_crf        = _field("0 – 51, e.g. 23")
+        self.enc_crf        = _field("0 - 51, e.g. 23")
         self.enc_abitrate   = _field("e.g. 192k")
         self.enc_resolution = _field("e.g. 1920x1080")
         self.enc_fps        = _field("e.g. 30")
@@ -355,6 +355,28 @@ class ExportPanel(QWidget):
     def get_hw_accel(self) -> str:
         display_name = self.hw_accel_combo.currentText()
         return HW_ACCEL_OPTIONS.get(display_name, "")
+
+    def load_encoding_params(self, enc: dict):
+        """Apply encoding parameters from a parsed export log dict."""
+        self.enc_vcodec.setText(enc.get("vcodec") or "")
+        self.enc_acodec.setText(enc.get("acodec") or "")
+        self.enc_crf.setText(enc.get("crf") or "")
+        self.enc_vbitrate.setText(enc.get("video_bitrate") or "")
+        self.enc_abitrate.setText(enc.get("audio_bitrate") or "")
+        self.enc_resolution.setText(enc.get("resolution") or "")
+        self.enc_fps.setText(enc.get("fps") or "")
+        self.enc_format.setText(enc.get("format") or "")
+        self.enc_extra.setText(enc.get("extra") or "")
+        self._set_hw_accel_by_value(enc.get("hw_accel") or "")
+        self._update_target_size_estimate()
+
+    def _set_hw_accel_by_value(self, ffmpeg_value: str):
+        """Select the hw_accel combo entry matching a ffmpeg flag value (e.g. 'cuda')."""
+        rev = {v: k for k, v in HW_ACCEL_OPTIONS.items()}
+        display = rev.get(ffmpeg_value, "None")
+        idx = self.hw_accel_combo.findText(display)
+        if idx >= 0:
+            self.hw_accel_combo.setCurrentIndex(idx)
 
     def get_save_log(self) -> bool:
         return self.save_log_check.isChecked()

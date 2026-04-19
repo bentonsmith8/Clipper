@@ -20,6 +20,7 @@ from ui.export_panel import ExportPanel
 from ui.themes import ThemeManager, BUILTIN_THEME_NAMES
 from ui.theme_editor import ThemeEditorDialog
 from core.ffmpeg_worker import probe_video, VideoInfo, ExportWorker, AudioPreviewWorker
+from core.log_parser import parse_export_log
 from core.constants import SERVICE_NAME
 
 
@@ -152,6 +153,10 @@ class MainWindow(QMainWindow):
         act_open.triggered.connect(self._open_file_dialog)
         file_menu.addAction(act_open)
 
+        act_open_log = QAction("Open &Log…", self)
+        act_open_log.triggered.connect(self._open_log_dialog)
+        file_menu.addAction(act_open_log)
+
         self._act_unload = QAction("&Unload Video", self)
         self._act_unload.triggered.connect(self._unload_video)
         self._act_unload.setEnabled(False)
@@ -273,6 +278,62 @@ class MainWindow(QMainWindow):
         )
         if path:
             self._load_video(path)
+
+    def _open_log_dialog(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Open Export Log", "",
+            "Clipper Log Files (*.txt);;All Files (*)"
+        )
+        if path:
+            self._load_from_log(path)
+
+    def _load_from_log(self, log_path: str):
+        try:
+            log = parse_export_log(log_path)
+        except Exception as e:
+            QMessageBox.critical(self, "Invalid Log File", f"Could not parse log file:\n{e}")
+            return
+
+        if not self._confirm_replace(action="Load from export log"):
+            return
+
+        input_path = log["input_path"]
+        if not os.path.exists(input_path):
+            reply = QMessageBox.question(
+                self, "Video Not Found",
+                f"The original video was not found at:\n{input_path}\n\n"
+                "Would you like to browse for it manually?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            )
+            if reply != QMessageBox.StandardButton.Yes:
+                return
+            input_path, _ = QFileDialog.getOpenFileName(
+                self, "Locate Video File", "",
+                "Video Files (*.mp4 *.mov *.mkv *.avi *.webm *.m4v *.flv *.wmv *.mxf);;All Files (*)"
+            )
+            if not input_path:
+                return
+
+        self._load_video(input_path)
+        if not self._video_info:
+            return
+
+        # Restore in/out points (set out first to avoid clamping against default out)
+        start = max(0.0, log["start_sec"])
+        end = min(log["end_sec"], self._video_info.duration)
+        self.timeline.set_out_point(end)
+        self.timeline.set_in_point(start)
+
+        # Restore encoding parameters
+        self.export_panel.load_encoding_params(log["encoding"])
+
+        # Restore audio mix if present
+        if log.get("audio_mix"):
+            self.player.set_audio_mix_config(log["audio_mix"])
+
+        # Restore original output path
+        if log["output_path"]:
+            self.export_panel.set_output_path(log["output_path"])
 
     def _confirm_replace(self, action: str = "Load a new video") -> bool:
         """Return True if safe to replace the current video. Prompts only when trim points have been adjusted."""
@@ -487,9 +548,13 @@ class MainWindow(QMainWindow):
             url = event.mimeData().urls()[0]
             if url.isLocalFile():
                 ext = os.path.splitext(url.toLocalFile())[1].lower()
-                if ext in self._VIDEO_EXTENSIONS:
+                if ext in self._VIDEO_EXTENSIONS or ext == ".txt":
                     event.acceptProposedAction()
 
     def dropEvent(self, event: QDropEvent):
         url = event.mimeData().urls()[0]
-        self._on_video_dropped(url.toLocalFile())
+        path = url.toLocalFile()
+        if os.path.splitext(path)[1].lower() == ".txt":
+            self._load_from_log(path)
+        else:
+            self._on_video_dropped(path)

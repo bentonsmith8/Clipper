@@ -485,6 +485,17 @@ class VideoPlayerWidget(QWidget):
     # Drag & drop
     # ------------------------------------------------------------------
 
+    def set_audio_mix_config(self, mix: list):
+        """Apply audio mix settings from a parsed export log. mix is a list of
+        {audio_index: int, muted: bool, volume: float} dicts."""
+        for entry in mix:
+            idx = entry.get("audio_index", -1)
+            for row in self._stream_rows:
+                if row["stream"]["audio_index"] == idx:
+                    row["mute_btn"].setChecked(entry.get("muted", False))
+                    row["vol_slider"].setValue(int(entry.get("volume", 1.0) * 100))
+                    break
+
     def _is_video_drop(self, event) -> bool:
         urls = event.mimeData().urls()
         if not urls:
