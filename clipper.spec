@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 from PyInstaller.utils.hooks import collect_all, collect_data_files
 
-BUNDLE_FFMPEG = False  # set True if bundling ffmpeg.exe/ffprobe.exe here
+BUNDLE_FFMPEG = True  # set True if bundling ffmpeg.exe/ffprobe.exe here
 
 # ---------------------------------------------------------------------------
 # Data files

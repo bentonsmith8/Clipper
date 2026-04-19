@@ -1,0 +1,64 @@
+name: Build & Release Installer
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-installer:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt pyinstaller
+
+      - name: Download ffmpeg
+        run: |
+          $url = "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+          $zip = "ffmpeg.zip"
+          Invoke-WebRequest -Uri $url -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath ffmpeg_tmp -Force
+
+          # gyan.dev archives have a single versioned subfolder; find it
+          $bin = Get-ChildItem ffmpeg_tmp -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
+          $binDir = $bin.DirectoryName
+
+          Copy-Item "$binDir\ffmpeg.exe"  "ffmpeg.exe"
+          Copy-Item "$binDir\ffprobe.exe" "ffprobe.exe"
+          if (Test-Path "$binDir\ffplay.exe") {
+            Copy-Item "$binDir\ffplay.exe" "ffplay.exe"
+          }
+        shell: pwsh
+
+      - name: Build with PyInstaller
+        run: pyinstaller clipper.spec --clean --noconfirm
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+        shell: pwsh
+
+      - name: Update version in installer script
+        run: |
+          $tag = "${{ github.ref_name }}"          # e.g. v1.2.0
+          $version = $tag.TrimStart("v")            # e.g. 1.2.0
+          (Get-Content clipper_installer.iss) `
+            -replace '#define AppVersion\s+"[^"]+"', "#define AppVersion `"$version`"" |
+            Set-Content clipper_installer.iss
+        shell: pwsh
+
+      - name: Compile Inno Setup installer
+        run: iscc clipper_installer.iss
+        shell: pwsh
+
+      - name: Upload installer to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: installer_output/ClipperInstaller-v*.exe
