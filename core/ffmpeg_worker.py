@@ -603,3 +603,81 @@ class ExportWorker(QThread):
 
         self.progress.emit(100)
         self.finished.emit(self.output_path)
+
+
+# ---------------------------------------------------------------------------
+# Audio Preview Worker
+# ---------------------------------------------------------------------------
+
+class AudioPreviewWorker(QThread):
+    """
+    Renders the in/out range to a temp PCM WAV using the current audio mix
+    settings (volume, mute, stream selection). The result is a file whose
+    timestamps start at 0 and can be played alongside the video with a simple
+    position offset (offset = in_pt).
+    """
+    ready = pyqtSignal(str)   # temp WAV path
+    error = pyqtSignal(str)
+
+    def __init__(self, input_path: str, start_sec: float, end_sec: float,
+                 audio_mix: list, parent=None):
+        super().__init__(parent)
+        self.input_path = input_path
+        self.start_sec = start_sec
+        self.end_sec = end_sec
+        self.audio_mix = audio_mix
+        self._temp_path: Optional[str] = None
+
+    def run(self):
+        import tempfile
+        duration = self.end_sec - self.start_sec
+        f = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+        f.close()
+        self._temp_path = f.name
+
+        active = [s for s in self.audio_mix if not s.get("mute", False)]
+
+        if not active:
+            cmd = [
+                "ffmpeg", "-y",
+                "-f", "lavfi",
+                "-i", f"anullsrc=r=48000:cl=stereo:d={duration:.6f}",
+                "-c:a", "pcm_s16le", self._temp_path,
+            ]
+        else:
+            cmd = [
+                "ffmpeg", "-y",
+                "-ss", f"{self.start_sec:.6f}",
+                "-i", self.input_path,
+                "-t", f"{duration:.6f}",
+                "-vn",
+            ]
+            needs_filter = (
+                len(active) > 1 or
+                abs(active[0].get("volume", 1.0) - 1.0) > 0.01
+            )
+            if needs_filter:
+                parts = [
+                    f"[0:a:{s['audio_index']}]volume={s['volume']:.3f}[av{i}]"
+                    for i, s in enumerate(active)
+                ]
+                if len(active) == 1:
+                    af = (f"[0:a:{active[0]['audio_index']}]"
+                          f"volume={active[0]['volume']:.3f}[aout]")
+                else:
+                    mix_in = "".join(f"[av{i}]" for i in range(len(active)))
+                    af = (";".join(parts) +
+                          f";{mix_in}amix=inputs={len(active)}:normalize=0[aout]")
+                cmd += ["-filter_complex", af, "-map", "[aout]"]
+            else:
+                cmd += ["-map", f"0:a:{active[0]['audio_index']}"]
+            cmd += ["-c:a", "pcm_s16le", self._temp_path]
+
+        try:
+            result = subprocess.run(cmd, capture_output=True, timeout=300)
+            if result.returncode != 0:
+                self.error.emit(result.stderr.decode(errors="replace"))
+                return
+            self.ready.emit(self._temp_path)
+        except Exception as e:
+            self.error.emit(str(e))

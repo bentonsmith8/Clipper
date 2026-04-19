@@ -10,8 +10,13 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PyQt6.QtMultimediaWidgets import QVideoWidget
-from PyQt6.QtCore import Qt, QUrl, pyqtSignal, QTimer
-from PyQt6.QtGui import QIcon, QFont
+from PyQt6.QtCore import Qt, QUrl, pyqtSignal
+from PyQt6.QtGui import QFont
+
+_VIDEO_EXTENSIONS = frozenset({
+    ".mp4", ".mov", ".mkv", ".avi", ".webm",
+    ".m4v", ".flv", ".wmv", ".mxf", ".ts", ".m2ts",
+})
 
 
 class VideoPlayerWidget(QWidget):
@@ -26,6 +31,8 @@ class VideoPlayerWidget(QWidget):
     position_changed = pyqtSignal(float)   # current position in seconds
     duration_changed = pyqtSignal(float)   # total duration in seconds
     media_loaded = pyqtSignal()
+    audio_preview_requested = pyqtSignal()
+    video_dropped = pyqtSignal(str)        # local path of a dropped video file
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -35,6 +42,12 @@ class VideoPlayerWidget(QWidget):
         self._stream_rows = []     # list of {monitor_btn, mute_btn, vol_slider, vol_label, stream}
         self._monitor_group = QButtonGroup(self)
         self._monitor_group.setExclusive(True)
+        self._preview_player: QMediaPlayer = None
+        self._preview_audio_output: QAudioOutput = None
+        self._preview_active = False
+        self._preview_offset = 0.0   # in_pt of the rendered clip (seconds)
+        self._preview_file: str = None
+        self.setAcceptDrops(True)
         self._setup_player()
         self._build_ui()
         self._connect_signals()
@@ -116,9 +129,33 @@ class VideoPlayerWidget(QWidget):
         # Audio mix bar (hidden until streams are loaded)
         self.audio_mix_bar = QFrame()
         self.audio_mix_bar.setObjectName("audioMixBar")
-        self._audio_mix_layout = QVBoxLayout(self.audio_mix_bar)
-        self._audio_mix_layout.setContentsMargins(12, 6, 12, 6)
+        mix_outer = QVBoxLayout(self.audio_mix_bar)
+        mix_outer.setContentsMargins(12, 6, 12, 6)
+        mix_outer.setSpacing(3)
+
+        # Preview header row
+        preview_header = QWidget()
+        ph_layout = QHBoxLayout(preview_header)
+        ph_layout.setContentsMargins(0, 0, 0, 4)
+        ph_layout.setSpacing(8)
+        self.btn_preview_mix = QPushButton("Preview Audio Mix")
+        self.btn_preview_mix.setObjectName("btnPreviewMix")
+        self.btn_preview_mix.setFixedHeight(28)
+        self.btn_preview_mix.setToolTip(
+            "Render the mixed audio for the current in/out range and play it\n"
+            "synchronized with the video so you can hear the exact export mix."
+        )
+        self.btn_preview_mix.clicked.connect(self._on_preview_clicked)
+        ph_layout.addWidget(self.btn_preview_mix)
+        ph_layout.addStretch()
+        mix_outer.addWidget(preview_header)
+
+        # Stream rows go here, managed by set_audio_streams
+        self._stream_container = QWidget()
+        self._audio_mix_layout = QVBoxLayout(self._stream_container)
+        self._audio_mix_layout.setContentsMargins(0, 0, 0, 0)
         self._audio_mix_layout.setSpacing(3)
+        mix_outer.addWidget(self._stream_container)
 
         self.audio_mix_bar.setVisible(False)
         layout.addWidget(self.audio_mix_bar)
@@ -321,6 +358,7 @@ class VideoPlayerWidget(QWidget):
         seconds = ms / 1000.0
         self._update_timecode(seconds)
         self.position_changed.emit(seconds)
+        self._sync_preview(seconds)
 
     def _on_duration_changed(self, ms: int):
         self._duration = ms / 1000.0
@@ -332,6 +370,103 @@ class VideoPlayerWidget(QWidget):
             self.btn_play.setText("⏸")
         else:
             self.btn_play.setText("▶")
+            if self._preview_active and self._preview_player:
+                self._preview_player.pause()
+
+    # ------------------------------------------------------------------
+    # Audio preview
+    # ------------------------------------------------------------------
+
+    def _on_preview_clicked(self):
+        if self._preview_active:
+            self.stop_audio_preview()
+        else:
+            self.btn_preview_mix.setText("Rendering...")
+            self.btn_preview_mix.setEnabled(False)
+            self.audio_preview_requested.emit()
+
+    def start_audio_preview(self, path: str, in_pt: float):
+        """Called by MainWindow when the rendered temp WAV is ready."""
+        self.stop_audio_preview()
+
+        self._preview_file = path
+        self._preview_offset = in_pt
+        self._preview_active = True
+
+        self._preview_audio_output = QAudioOutput()
+        self._preview_audio_output.setVolume(1.0)
+        self._preview_player = QMediaPlayer()
+        self._preview_player.setAudioOutput(self._preview_audio_output)
+
+        # Silence the main player while preview is active
+        self.audio_output.setVolume(0.0)
+
+        # Seek audio to match current video position once media is loaded
+        def _on_loaded(status):
+            if status == QMediaPlayer.MediaStatus.LoadedMedia:
+                self._sync_preview(self.player.position() / 1000.0)
+
+        self._preview_player.mediaStatusChanged.connect(_on_loaded)
+        self._preview_player.setSource(QUrl.fromLocalFile(path))
+
+        self.btn_preview_mix.setText("Stop Preview")
+        self.btn_preview_mix.setEnabled(True)
+
+    def stop_audio_preview(self):
+        if self._preview_player:
+            self._preview_player.stop()
+            self._preview_player.setSource(QUrl())
+            self._preview_player.deleteLater()
+            self._preview_player = None
+        if self._preview_audio_output:
+            self._preview_audio_output.deleteLater()
+            self._preview_audio_output = None
+
+        if self._preview_file:
+            try:
+                os.unlink(self._preview_file)
+            except OSError:
+                pass
+            self._preview_file = None
+
+        if self._preview_active:
+            self._preview_active = False
+            self._restore_main_audio()
+
+        self.btn_preview_mix.setText("Preview Audio Mix")
+        self.btn_preview_mix.setEnabled(True)
+
+    def _sync_preview(self, main_sec: float):
+        if not self._preview_active or self._preview_player is None:
+            return
+
+        audio_sec = main_sec - self._preview_offset
+        if audio_sec < 0:
+            if self._preview_player.playbackState() == QMediaPlayer.PlaybackState.PlayingState:
+                self._preview_player.pause()
+            return
+
+        expected_ms = int(audio_sec * 1000)
+        if abs(self._preview_player.position() - expected_ms) > 200:
+            self._preview_player.setPosition(expected_ms)
+
+        main_playing = self.player.playbackState() == QMediaPlayer.PlaybackState.PlayingState
+        preview_playing = self._preview_player.playbackState() == QMediaPlayer.PlaybackState.PlayingState
+
+        if main_playing and not preview_playing:
+            self._preview_player.play()
+        elif not main_playing and preview_playing:
+            self._preview_player.pause()
+
+    def _restore_main_audio(self):
+        monitored_id = self._monitor_group.checkedId()
+        for row in self._stream_rows:
+            if row["stream"]["audio_index"] == monitored_id:
+                muted = row["mute_btn"].isChecked()
+                vol = row["vol_slider"].value() / 100.0
+                self.audio_output.setVolume(0.0 if muted else vol)
+                return
+        self.audio_output.setVolume(1.0)
 
     def _update_timecode(self, seconds: float):
         self.timecode_label.setText(
@@ -345,6 +480,28 @@ class VideoPlayerWidget(QWidget):
         s = int(seconds % 60)
         ms = int((seconds * 1000) % 1000)
         return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
+
+    # ------------------------------------------------------------------
+    # Drag & drop
+    # ------------------------------------------------------------------
+
+    def _is_video_drop(self, event) -> bool:
+        urls = event.mimeData().urls()
+        if not urls:
+            return False
+        ext = os.path.splitext(urls[0].toLocalFile())[1].lower()
+        return ext in _VIDEO_EXTENSIONS
+
+    def dragEnterEvent(self, event):
+        event.acceptProposedAction() if self._is_video_drop(event) else event.ignore()
+
+    def dragMoveEvent(self, event):
+        event.acceptProposedAction() if self._is_video_drop(event) else event.ignore()
+
+    def dropEvent(self, event):
+        if self._is_video_drop(event):
+            event.acceptProposedAction()
+            self.video_dropped.emit(event.mimeData().urls()[0].toLocalFile())
 
     # ------------------------------------------------------------------
     # Resize handler
