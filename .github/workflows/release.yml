@@ -40,6 +40,15 @@ jobs:
           }
         shell: pwsh
 
+      - name: Update version in constants
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag.TrimStart("v")
+          (Get-Content core/constants.py) `
+            -replace 'SERVICE_VERSION\s*=\s*"[^"]+"', "SERVICE_VERSION = `"$version`"" |
+            Set-Content core/constants.py
+        shell: pwsh
+
       - name: Build with PyInstaller
         run: pyinstaller clipper.spec --clean --noconfirm
 

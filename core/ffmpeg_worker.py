@@ -172,7 +172,7 @@ def probe_video(path: str) -> VideoInfo:
         "-show_streams", "-show_format",
         path
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, creationflags=subprocess.CREATE_NO_WINDOW)
     if result.returncode != 0:
         raise RuntimeError(f"ffprobe failed: {result.stderr}")
 
@@ -237,7 +237,7 @@ def extract_thumbnail(video_path: str, time_sec: float, output_path: str, width:
         "-q:v", "3",
         output_path
     ]
-    result = subprocess.run(cmd, capture_output=True, timeout=15)
+    result = subprocess.run(cmd, capture_output=True, timeout=15, creationflags=subprocess.CREATE_NO_WINDOW)
     return result.returncode == 0
 
 
@@ -451,6 +451,7 @@ class ExportWorker(QThread):
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=1,
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
 
             # Read stderr for log
@@ -574,7 +575,7 @@ class ExportWorker(QThread):
             palette_path
         ]
         self.log_line.emit("GIF Pass 1: Generating palette...")
-        r1 = subprocess.run(cmd1, capture_output=True, text=True)
+        r1 = subprocess.run(cmd1, capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
         if r1.returncode != 0:
             self.error.emit(f"GIF palette generation failed: {r1.stderr}")
             return
@@ -592,7 +593,7 @@ class ExportWorker(QThread):
             self.output_path
         ]
         self.log_line.emit("GIF Pass 2: Encoding with palette...")
-        r2 = subprocess.run(cmd2, capture_output=True, text=True)
+        r2 = subprocess.run(cmd2, capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
 
         if os.path.exists(palette_path):
             os.remove(palette_path)
@@ -674,7 +675,7 @@ class AudioPreviewWorker(QThread):
             cmd += ["-c:a", "pcm_s16le", self._temp_path]
 
         try:
-            result = subprocess.run(cmd, capture_output=True, timeout=300)
+            result = subprocess.run(cmd, capture_output=True, timeout=300, creationflags=subprocess.CREATE_NO_WINDOW)
             if result.returncode != 0:
                 self.error.emit(result.stderr.decode(errors="replace"))
                 return

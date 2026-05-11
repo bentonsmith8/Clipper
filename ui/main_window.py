@@ -21,7 +21,7 @@ from ui.themes import ThemeManager, BUILTIN_THEME_NAMES
 from ui.theme_editor import ThemeEditorDialog
 from core.ffmpeg_worker import probe_video, VideoInfo, ExportWorker, AudioPreviewWorker
 from core.log_parser import parse_export_log
-from core.constants import SERVICE_NAME
+from core.constants import SERVICE_NAME, SERVICE_VERSION
 
 
 class MainWindow(QMainWindow):
@@ -81,10 +81,14 @@ class MainWindow(QMainWindow):
         # In/Out button bar under timeline
         io_bar = QHBoxLayout()
         from PyQt6.QtWidgets import QPushButton
-        self.btn_set_in = QPushButton("[I]  Set In Point")
+        self.btn_set_in = QPushButton("Set In Point")
         self.btn_set_in.setObjectName("btnIO")
-        self.btn_set_out = QPushButton("Set Out Point  [O]")
+        self.btn_goto_in = QPushButton("Go to In Point")
+        self.btn_goto_in.setObjectName("btnIO")
+        self.btn_set_out = QPushButton("Set Out Point")
         self.btn_set_out.setObjectName("btnIO")
+        self.btn_goto_out = QPushButton("Go to Out Point")
+        self.btn_goto_out.setObjectName("btnIO")
         self.btn_reset_io = QPushButton("↺  Reset Range")
         self.btn_reset_io.setObjectName("btnIOSecondary")
         self.btn_unload = QPushButton("✕  Unload")
@@ -93,7 +97,9 @@ class MainWindow(QMainWindow):
         self.btn_unload.setEnabled(False)
 
         io_bar.addWidget(self.btn_set_in)
+        io_bar.addWidget(self.btn_goto_in)
         io_bar.addWidget(self.btn_set_out)
+        io_bar.addWidget(self.btn_goto_out)
         io_bar.addStretch()
         io_bar.addWidget(self.btn_reset_io)
         io_bar.addWidget(self.btn_unload)
@@ -131,8 +137,14 @@ class MainWindow(QMainWindow):
         self.btn_set_in.clicked.connect(
             lambda: self.timeline.set_in_point(self.player.get_position())
         )
+        self.btn_goto_in.clicked.connect(
+            lambda: self.player.seek(self.timeline.get_in_point())
+        )
         self.btn_set_out.clicked.connect(
             lambda: self.timeline.set_out_point(self.player.get_position())
+        )
+        self.btn_goto_out.clicked.connect(
+            lambda: self.player.seek(self.timeline.get_out_point())
         )
         self.btn_reset_io.clicked.connect(self._reset_points)
 
@@ -198,6 +210,16 @@ class MainWindow(QMainWindow):
         act_out.triggered.connect(lambda: self.timeline.set_out_point(self.player.get_position()))
         pb_menu.addAction(act_out)
 
+        act_goto_in = QAction("Go to In Point", self)
+        act_goto_in.setShortcut(QKeySequence(Qt.Modifier.SHIFT | Qt.Key.Key_I))
+        act_goto_in.triggered.connect(lambda: self.player.seek(self.timeline.get_in_point()))
+        pb_menu.addAction(act_goto_in)
+
+        act_goto_out = QAction("Go to Out Point", self)
+        act_goto_out.setShortcut(QKeySequence(Qt.Modifier.SHIFT | Qt.Key.Key_O))
+        act_goto_out.triggered.connect(lambda: self.player.seek(self.timeline.get_out_point()))
+        pb_menu.addAction(act_goto_out)
+
         pb_menu.addSeparator()
 
         act_frame_back = QAction("Previous Frame", self)
@@ -209,6 +231,17 @@ class MainWindow(QMainWindow):
         act_frame_fwd.setShortcut(Qt.Key.Key_Period)
         act_frame_fwd.triggered.connect(self.player.step_forward)
         pb_menu.addAction(act_frame_fwd)
+
+        # Help menu
+        help_menu = mb.addMenu("&Help")
+
+        act_how_to = QAction("How to Use…", self)
+        act_how_to.triggered.connect(self._show_how_to_use)
+        help_menu.addAction(act_how_to)
+
+        act_about = QAction("About…", self)
+        act_about.triggered.connect(self._show_about)
+        help_menu.addAction(act_about)
 
     def _build_shortcuts(self):
         pass  # Shortcuts are set in menu actions
@@ -528,6 +561,41 @@ class MainWindow(QMainWindow):
         self.export_panel.set_exporting(False)
         self.export_panel.set_status(f"✗ {msg}", is_error=True)
         QMessageBox.critical(self, "Export Failed", msg)
+
+    # ------------------------------------------------------------------
+    # Help
+    # ------------------------------------------------------------------
+
+    def _show_how_to_use(self):
+        QMessageBox.information(self, "How to Use Clipper", (
+            "<b>Loading a video</b><br>"
+            "Drag a video file onto the window, or use <i>File → Open Video</i>.<br>"
+            "You can also drag or open a <tt>.txt</tt> export log to restore a previous session.<br><br>"
+
+            "<b>Setting trim points</b><br>"
+            "Drag the timeline scrubber or click to seek. Press <b>I</b> to set the In point "
+            "and <b>O</b> to set the Out point at the current position. "
+            "Use <b>Shift+I</b> / <b>Shift+O</b> to jump directly to those points.<br><br>"
+
+            "<b>Playback controls</b><br>"
+            "<b>Space</b> — play / pause<br>"
+            "<b>,</b> / <b>.</b> — step one frame back / forward<br><br>"
+
+            "<b>Exporting</b><br>"
+            "Choose a format and output path in the Export panel, then click <i>Export</i>. "
+            "A log file can optionally be saved alongside the clip so the session can be restored later.<br><br>"
+
+            "<b>Audio mix</b><br>"
+            "If the video has multiple audio streams, select and balance them in the player controls "
+            "and use <i>Preview Audio Mix</i> to audition the result before exporting."
+        ))
+
+    def _show_about(self):
+        QMessageBox.about(self, f"About {SERVICE_NAME}",
+            f"<b>{SERVICE_NAME}</b><br>"
+            f"Version {SERVICE_VERSION}<br><br>"
+            "A fast, lightweight video trimming and export tool."
+        )
 
     # ------------------------------------------------------------------
     # Drag & Drop
